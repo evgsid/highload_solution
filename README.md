@@ -1,6 +1,8 @@
 # highload_solution
 Pre-final 14th place solution.
 
+Решение для [HighLoad Cup 2017](https://highloadcup.ru/round/1/)
+
 Чтобы собрать решение:
 Нужно собрать и добавить в проект/слинковать:
 * https://github.com/sebastiandev/zipper - либа для распаковки zip.
