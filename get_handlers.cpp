@@ -6,9 +6,8 @@
 
 #include "get_handlers.h"
 
+#include <algorithm>
 #include <string>
-
-#include <folly/Conv.h>
 
 #include "db_instance.h"
 #include "helpers.h"
@@ -81,27 +80,31 @@ void GetUsersVisits(const http_request& req, http_response& res, uint32_t id) {
   std::string country;
   uint32_t to_distance = 0;
   
-  try {
-    for (int i = 0; i < req.params_size; ++i) {
-      auto& param = req.url_params[i];
-      if (!memcmp(kFromData.c_str(), param.key, kFromData.length() + 1)) {
-        from_date = folly::to<int>(param.val);
-        search_flags |= QueryFlags::FROM_DATE;
-      } else if (!memcmp(kToDate.c_str(), param.key, kToDate.length() + 1)) {
-        to_date = folly::to<int>(param.val);
-        search_flags |= QueryFlags::TO_DATE;
-      } else if (!memcmp(kCountry.c_str(), param.key, kCountry.length() + 1)) {
-        country = param.val;
-        search_flags |= QueryFlags::COUNTRY;
-      } else if (!memcmp(kToDistance.c_str(), param.key,
-                         kToDistance.length() + 1)) {
-        to_distance = folly::to<uint32_t>(param.val);
-        search_flags |= QueryFlags::TO_DISTANCE;
+  for (int i = 0; i < req.params_size; ++i) {
+    auto& param = req.url_params[i];
+    if (!memcmp(kFromData.c_str(), param.key, kFromData.length() + 1)) {
+      if (!GetInt(param.val, &from_date)) {
+        BadRequest(HTTP_GET, res);
+        return;
       }
+      search_flags |= QueryFlags::FROM_DATE;
+    } else if (!memcmp(kToDate.c_str(), param.key, kToDate.length() + 1)) {
+      if (!GetInt(param.val, &to_date)) {
+        BadRequest(HTTP_GET, res);
+        return;
+      }
+      search_flags |= QueryFlags::TO_DATE;
+    } else if (!memcmp(kCountry.c_str(), param.key, kCountry.length() + 1)) {
+      country = param.val;
+      search_flags |= QueryFlags::COUNTRY;
+    } else if (!memcmp(kToDistance.c_str(), param.key,
+                       kToDistance.length() + 1)) {
+      if (!GetUint32(param.val, &to_distance)) {
+        BadRequest(HTTP_GET, res);
+        return;
+      }
+      search_flags |= QueryFlags::TO_DISTANCE;
     }
-  } catch (...) {
-    BadRequest(HTTP_GET, res);
-    return;
   }
 
   auto* index = g_db_instance->GetUsersVisitsIndex();
@@ -251,37 +254,44 @@ void GetLocationsAvg(const http_request& req, http_response& res, uint32_t id) {
   int from_age = 0;
   int to_age = 0;
   Gender gender = Gender::UNKNOWN;
-  try {
-    for (int i = 0; i < req.params_size; ++i) {
-      auto& param = req.url_params[i];
-      if (!memcmp(kFromData.c_str(), param.key, kFromData.length() + 1)) {
-        from_date = folly::to<int>(param.val);
-        search_flags |= QueryFlags::FROM_DATE;
-      } else if (!memcmp(kToDate.c_str(), param.key, kToDate.length() + 1)) {
-        to_date = folly::to<int>(param.val);
-        search_flags |= QueryFlags::TO_DATE;
-      } else if (!memcmp(kFromAge.c_str(), param.key, kFromAge.length() + 1)) {
-        from_age = folly::to<int>(param.val);
-        search_flags |= QueryFlags::FROM_AGE;
-      } else if (!memcmp(kToAge.c_str(), param.key, kToAge.length() + 1)) {
-        to_age = folly::to<int>(param.val);
-        search_flags |= QueryFlags::TO_AGE;
-      } else if (!memcmp(kGender.c_str(), param.key, kGender.length() + 1)) {
-        size_t gender_len = strlen(param.val);
-        if (gender_len == 1 && param.val[0] == 'm') {
-          gender = Gender::M;
-        } else if (gender_len == 1 && param.val[0] == 'f') {
-          gender = Gender::F;
-        } else {
-          BadRequest(HTTP_GET, res);
-          return;
-        }
-        search_flags |= QueryFlags::GENDER;
+  for (int i = 0; i < req.params_size; ++i) {
+    auto& param = req.url_params[i];
+    if (!memcmp(kFromData.c_str(), param.key, kFromData.length() + 1)) {
+      if (!GetInt(param.val, &from_date)) {
+        BadRequest(HTTP_GET, res);
+        return;
       }
+      search_flags |= QueryFlags::FROM_DATE;
+    } else if (!memcmp(kToDate.c_str(), param.key, kToDate.length() + 1)) {
+      if (!GetInt(param.val, &to_date)) {
+        BadRequest(HTTP_GET, res);
+        return;
+      }
+      search_flags |= QueryFlags::TO_DATE;
+    } else if (!memcmp(kFromAge.c_str(), param.key, kFromAge.length() + 1)) {
+      if (!GetInt(param.val, &from_age)) {
+        BadRequest(HTTP_GET, res);
+        return;
+      }
+      search_flags |= QueryFlags::FROM_AGE;
+    } else if (!memcmp(kToAge.c_str(), param.key, kToAge.length() + 1)) {
+      if (!GetInt(param.val, &to_age)) {
+        BadRequest(HTTP_GET, res);
+        return;
+      }
+      search_flags |= QueryFlags::TO_AGE;
+    } else if (!memcmp(kGender.c_str(), param.key, kGender.length() + 1)) {
+      size_t gender_len = strlen(param.val);
+      if (gender_len == 1 && param.val[0] == 'm') {
+        gender = Gender::M;
+      } else if (gender_len == 1 && param.val[0] == 'f') {
+        gender = Gender::F;
+      } else {
+        BadRequest(HTTP_GET, res);
+        return;
+      }
+      search_flags |= QueryFlags::GENDER;
     }
-  } catch (...) {
-    BadRequest(HTTP_GET, res);
-    return;
   }
   auto* index = g_db_instance->GetLocationsVisitsIndex();
   auto* visits = index->GetValues(id);

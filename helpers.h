@@ -28,5 +28,9 @@ void SendResponse(http_response& res, const std::string& data);
 
 void SendOk(http_response& res);
 
+bool GetInt(const char* val, int* output);
+
+bool GetUint32(const char* val, uint32_t* output);
+
 #endif /* HELPERS_H */
 

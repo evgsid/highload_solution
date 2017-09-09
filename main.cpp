@@ -1,6 +1,5 @@
 
 #include <cstring>
-#include <folly/Conv.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -83,9 +82,7 @@ void Route(HttpData& data) {
 //    }
 //  }
   if (data.method == HTTP_GET && ret >= 2) {
-    try {
-      id = folly::to<uint32_t>(parts[1]);
-    } catch (...) {
+    if (!GetUint32(parts[1], &id)) {
       NotFound(data.method, data.res);
       return;
     }
@@ -135,9 +132,7 @@ void Route(HttpData& data) {
         return;
       }
     } else {
-      try {
-        id = folly::to<uint32_t>(parts[1]);
-      } catch (...) {
+      if (!GetUint32(parts[1], &id)) {
         NotFound(data.method, data.res);
         return;
       }
@@ -202,7 +197,7 @@ int main() {
 
   addr.sin_family = AF_INET;
   addr.sin_port = htons(8080);
-//    addr.sin_port = htons(80);
+//  addr.sin_port = htons(80);
   addr.sin_addr.s_addr = htonl(INADDR_ANY);
   if (bind(listener, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
       perror("bind");
@@ -218,7 +213,7 @@ int main() {
   }
 
   std::vector<std::thread> threads;
-  unsigned int thread_nums = std::thread::hardware_concurrency();
+  unsigned int thread_nums = 3;
   for (unsigned int i = 0; i < thread_nums; ++i) {
     threads.push_back(std::thread([epollfd, max_events]() {
       epoll_event events[max_events];
@@ -230,7 +225,7 @@ int main() {
       char buf[kReadBufferSize];
       int nfds = 0;
       while (true) {
-        nfds = epoll_wait(epollfd, events, max_events, -1);
+        nfds = epoll_wait(epollfd, events, max_events, 0);
         if (nfds == -1) {
           if (errno == EINTR) {
             continue;

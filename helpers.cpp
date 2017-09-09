@@ -71,3 +71,32 @@ void SendOk(http_response& res) {
   res.iov[0].iov_len = ok.length();
   res.iov_size = 1;
 }
+
+bool GetInt(const char* val, int* output) {
+  int base = 1;
+  uint32_t number = 0;
+  int sign = 1;
+  if (*val == '-') {
+    sign = -1;
+    val++;
+  }
+  if (!GetUint32(val, &number)) {
+    return false;
+  }
+  *output = number * sign;
+  return true;
+}
+
+bool GetUint32(const char* val, uint32_t* output) {
+  int base = 10;
+  int number = 0;
+  while (*val) {
+    if (*val < '0' || *val > '9') {
+      return false;
+    }
+    number = number * base + (*val - '0');
+    val++;
+  }
+  *output = number;
+  return true;
+}
